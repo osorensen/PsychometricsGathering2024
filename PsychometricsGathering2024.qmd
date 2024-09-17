@@ -654,6 +654,12 @@ mod <- galamm(
 
 ::::
 
+## Conclusion and outlook
+
+- `galamm` tries to find a niche for complex models where current tools are impractical.
+- I plan to add link functions for rank and preference data.
+
+- Deterministic algorithms do not scale indefinitely - for intense longitudinal data (dynamic SEM, dynamic factor models, CT-SEM), Hamiltonian Monte Carlo with Stan seems much better.
 
 
 ## References
