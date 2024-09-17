@@ -1,11 +1,659 @@
 ---
-title: "PsychometricsGathering2024"
+title: "Semiparametric latent variable modeling in R with 'galamm'"
+subtitle: "Psychometrics Gathering, Stavanger, 2024"
+author: "Øystein Sørensen"
+institute: "Department of Psychology, University of Oslo"
+incremental: true
+format: revealjs
+bibliography: references.bib
+css: styles.css
 ---
 
-## Quarto
+# Background
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+## Cognitive neuroscience
 
-```{r}
-1 + 1
+> Study of the biological processes underlying cognition.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+![](figures/cognitive_test.jpg)
+:::
+
+::: {.column width="50%"}
+![](figures/brain_scan.jpg)
+:::
+
+::::
+
+- Genetics
+- Environment
+
+## Seemingly disconnected literatures
+
+:::: {.columns}
+
+::: {.column width="50%"}
+![](figures/cognitive_test.jpg){width="50%" fig-align="center"}
+
+- Factor structures
+- SEM, IRT
+- Parametric models
+- Multiple response types
+- Multivariate
+:::
+
+::: {.column width="50%"}
+![](figures/brain_scan.jpg){width="50%" fig-align="center"}
+
+- Nonlinear effects
+- Big multi-cohort data
+- Crossed and nested
+- Sumscores as covariates
+- Mass-univariate
+:::
+
+::::
+
+## Motivating example
+
+What is the effect of socioeconomic status (SES) on brain development?
+
+:::: {.columns}
+
+::: {.column width="50%"}
+- Brain trajectories $s(age)$ well captured with splines.
+- How does SES interact with $s(age)$?
+:::
+
+::: {.column width="50%"}
+![](figures/ses_hippocampus.jpg){fig-align="center"}
+:::
+
+::::
+
+
+## How to go about?
+
+- SES measured by multiple indicators.
+- Sumscores interacting with $s(age)$ = GAMM.
+- Nonlinear parametric model for $s(age)$, we could use SEM/GLLAMM?
+
+## Parametric models scale poorly
+
+For tens to thousands of outcome measures, we need something automatic.
+
+![](figures/brain_trajectories.jpg){fig-align="center"}
+
+[@sorensenRecipeAccurateEstimation2021]
+
+# Generalized additive latent and mixed models
+
+An extension of generalized linear latent and mixed models (GLLAMM) [@rabe-heskethGeneralizedMultilevelStructural2004;@skrondalGeneralizedLatentVariable2004]
+
+## GALAMM {#galamm-title}
+
+- Response distribution
+$$
+f\left(y | \theta, \phi \right) = \exp\left\{\frac{y \theta - b\left(\theta(\mu)\right)}{\phi} + c\left(y,\phi\right)\right\}
+$$
+
+- Nonlinear predictor
+$$
+\nu = \sum_{s=1}^{S}f_{s}\left(\mathbf{x}\right) + \sum_{l=2}^{L} \sum_{m=1}^{M} \eta_{m}^{(l)} \boldsymbol{\lambda}_{m}^{(l)}{}^{T} \mathbf{z}_{m}^{(l)}
+$$
+
+- Structural model
+$$
+\boldsymbol{\eta} = \mathbf{B}\boldsymbol{\eta} + \mathbf{h}\left(\mathbf{w}\right) + \boldsymbol{\zeta}
+$$
+
+---
+
+![](figures/PMET_frontpage.jpg){fig-align="center"}
+
+## Key ideas in GALAMM
+
+
+- Regularization parameters for smooth terms are top-level random effects.
+
+- Sparse matrix methods easily enable crossed random effects.
+
+- Maximum marginal likelihood estimation using Laplace approximation.
+
+- Gradients and Hessians popping out using autodiff.
+
+
+# The need for packaging
+
+## From paper's reproduction script
+
+
+```{r, echo=TRUE, eval=FALSE}
+library(galamm)
+library(memoise)
+library(tidyverse)
+library(gamm4)
+library(furrr)
+dat <- readRDS("data/ses_model/dat.rds")
+
+base_formula <- "value_z ~ 0 + itemedu_father + itemedu_mother + itemedu_self +
+  itemincome_father + itemincome_mother + itemincome_self + 
+  itemgrouphippocampus:(siteousAvanto + siteousPrisma + siteousSkyra + icv_z + sexmale) +
+  Xf + (1 | pseudoGroups) + (0 + itemgrouphippocampus | id)"
+
+
+for(case in letters[7:1]){
+  if(file.exists(paste0("results/ses_model/case_", case, ".rds"))){
+    next
+  }
+  sm <- smoothCon(s(age_z, by = itemgrouphippocampus, k = 15, bs = "cr"), data = dat)[[1]]
+  re <- smooth2random(sm, "", 2)
+  
+  mdat <- as.list(dat)
+  mdat$Xf <- re$Xf
+  mdat$Xr <- re$rand$Xr
+  mdat$pseudoGroups <- rep(1:ncol(re$rand$Xr), length = nrow(dat))
+  mdat$itemgroupses <- as.integer(mdat$itemgroup %in% c("edu", "income"))
+  
+  form <- paste(
+    base_formula,
+    if(case == "g") "(0 + itemgroupses | id)" else "(1 | id)", sep = " + ")
+  
+  lmod <- lFormula(as.formula(form), data = mdat)
+  
+  lmod$reTrms$Ztlist$`1 | pseudoGroups` <- as(t(as.matrix(mdat$Xr))[], class(lmod$reTrms$Zt))
+  lmod$reTrms$Zt <- do.call(rbind, lmod$reTrms$Ztlist)
+  delta <- diff(lmod$reTrms$Zt@p)
+  
+  itemvec <- mdat$item
+  if(case %in% c("a", "b")){
+    factor_mapping <- as.integer(itemvec) - 2L
+  } else if(case %in% c("c", "d")){
+    factor_mapping <- as.integer(
+      factor(
+        str_remove(itemvec, "_father|_mother"),
+        levels = c("edu", "edu_self", "income", "income_self", "hippocampus")
+      )) - 2L
+  } else if(case %in% c("e", "f", "g")){
+    factor_mapping <- as.integer(
+      factor(
+        str_remove(itemvec, "_father|_mother|_self"),
+        levels = c("edu", "income", "hippocampus")
+      )
+    ) - 2L
+    
+    if(case == "g"){
+      factor_mapping[itemvec == "hippocampus"] <- -1L
+    }
+  }
+  
+  lambda_mapping_Zt <- unlist(map(seq_along(delta), ~ c(factor_mapping[[.x]], rep(-1L, delta[[.x]] - 1))))
+  
+  if(case %in% c("a", "c", "e")){
+    mm <- max(factor_mapping)
+    lambda_mapping_Zt <- map(lambda_mapping_Zt, ~ if(.x == mm) c(mm, mm + 1L) else .x)
+    age_vec <- mdat$age_z[mdat$itemgroup == "hippocampus"]
+    lambda_mapping_Zt_covs <- vector(mode = "list", length = length(lambda_mapping_Zt))
+    j <- 1
+    for(i in seq_along(lambda_mapping_Zt)){
+      if(length(lambda_mapping_Zt[[i]]) == 1) {
+        lambda_mapping_Zt_covs[[i]] <- 1
+      } else {
+        lambda_mapping_Zt_covs[[i]] <- c(1, age_vec[[j]])
+        j <- j + 1
+      }
+    }
+    walk2(lambda_mapping_Zt, lambda_mapping_Zt_covs, function(x, y){
+      stopifnot(length(x) == length(y))
+    })
+  } else {
+    lambda_mapping_Zt_covs <- integer()
+  }
+ 
+  theta_inds <- seq(from = 1, to = length(lmod$reTrms$theta))
+  beta_inds <- seq(from = max(theta_inds) + 1L, length.out = ncol(lmod$X))
+  lambda_inds <- seq(from = max(beta_inds) + 1L, length.out = max(unlist(lambda_mapping_Zt)) + 1L)
+  weights_mapping <- if_else(mdat$itemgroup == "hippocampus", 1L, if_else(mdat$itemgroup == "edu", 0L, -1L))
+  weights_inds <- seq(from = max(lambda_inds) + 1L, length.out = length(unique(weights_mapping[weights_mapping != -1L])))
+  
+  lbound <- c(lmod$reTrms$lower, rep(-Inf, length(beta_inds)), 
+              rep(-Inf, length(lambda_inds)), rep(0.1, length(weights_inds)))
+  
+  mlwrapper <- function(par, gradient, hessian){
+    marginal_likelihood(
+      y = mdat$value_z,
+      X = lmod$X,
+      Zt = lmod$reTrms$Zt,
+      Lambdat = lmod$reTrms$Lambdat,
+      beta = par[beta_inds],
+      theta = par[theta_inds],
+      theta_mapping = lmod$reTrms$Lind - 1L,
+      lambda = par[lambda_inds],
+      lambda_mapping_Zt = lambda_mapping_Zt,
+      lambda_mapping_Zt_covs = lambda_mapping_Zt_covs,
+      weights = par[weights_inds],
+      weights_mapping = weights_mapping,
+      gradient = gradient,
+      hessian = hessian
+    )
+  }
+  
+  par_init <- tryCatch({
+    if(case == "f"){
+      tmp <- readRDS(file.path("results/ses_model", "case_g.rds"))$opt$par
+      c(tmp[1:17], 0, tmp[18:19])
+    } else if(case == "e"){
+      tmp <- readRDS(file.path("results/ses_model", "case_f.rds"))$opt$par
+      c(tmp[1:18], 0, tmp[19:20])
+    } else if(case == "d"){
+      tmp <- readRDS(file.path("results/ses_model", "case_f.rds"))$opt$par
+      c(tmp[1:16], 1, tmp[17], tmp[17], tmp[18], tmp[19:20])
+    } else if(case == "c"){
+      tmp <- readRDS(file.path("results/ses_model", "case_d.rds"))$opt$par
+      c(tmp[1:20], 0, tmp[21:22])
+    } else if(case == "b"){
+      tmp <- readRDS(file.path("results/ses_model", "case_d.rds"))$opt$par
+      c(tmp[1:16], tmp[17], tmp[17], tmp[18], tmp[18], tmp[19], tmp[20], tmp[21:22])
+    } else if(case == "a"){
+      tmp <- readRDS(file.path("results/ses_model", "case_b.rds"))$opt$par
+      c(tmp[1:22], 0, tmp[23:24])
+    } else {
+      stop()
+    }
+  }, 
+  error = function(e){
+    c(lmod$reTrms$theta, rep(0, ncol(lmod$X)), runif(length(lambda_inds)), c(1, 2))
+  })
+  
+  mlmem <- memoise(mlwrapper)
+  fn <- function(par, gradient = FALSE, hessian = FALSE){
+    mlmem(par, gradient, hessian)$logLik
+  }
+  gr <- function(par, gradient = TRUE, hessian = FALSE){
+    mlmem(par, gradient, hessian)$gradient
+  }
+  
+  stopifnot(length(gr(par_init)) == length(par_init))
+  
+  opt <- optim(
+    par = par_init, fn = fn, gr = gr, method = "L-BFGS-B", lower = lbound, 
+    control = list(fnscale = -1, maxit = 5000, trace = 3, REPORT = 10))
+  
+  final_model <- mlwrapper(opt$par, TRUE, TRUE)
+  S <- tryCatch({
+    -solve(final_model$hessian)
+  }, error = function(e) NULL)
+  
+  ret <- list(opt = opt, final_model = final_model,
+              beta_inds = beta_inds, theta_inds = theta_inds,
+              lambda_inds = lambda_inds, weights_inds = weights_inds,
+              reTrms = lmod$reTrms, X = lmod$X,
+              lambda_mapping_Zt = lambda_mapping_Zt,
+              lambda_mapping_Zt_covs = lambda_mapping_Zt_covs,
+              sm = sm, re = re, mdat = mdat, weights_mapping = weights_mapping,
+              S = S)
+  
+  Lambdat <- lmod$reTrms$Lambdat
+  Lambdat@x <- opt$par[theta_inds][lmod$reTrms$Lind]
+  
+  # Fitting parametrization, modulo Cholesky
+  spline_inds <- (lmod$reTrms$Gp[[3]] + 1L) : lmod$reTrms$Gp[[4]]
+  b <- as.numeric(Lambdat[spline_inds, spline_inds] %*% final_model$u[spline_inds])
+  
+  # Back to original parametrization
+  beta_spline <- re$trans.U %*% (
+      re$trans.D * c(b, opt$par[beta_inds[str_which(colnames(lmod$X), "Xf[:digit:]")]]))
+  
+  Zt <- lmod$reTrms$Zt
+  if(length(lambda_mapping_Zt_covs) == 0){
+    Zt@x <- c(1, opt$par[lambda_inds])[lambda_mapping_Zt + 2L]
+  } else {
+    Zt@x <- map2_dbl(lambda_mapping_Zt, lambda_mapping_Zt_covs, function(l, x){
+      if(identical(l, -1L)){
+        1
+      } else {
+        sum(opt$par[lambda_inds[l + 1L]] * x)
+      }
+    })
+  }
+  
+  Xfp <- cbind(as(lmod$X, "dgCMatrix")[, -str_which(colnames(lmod$X), "Xf")], re$rand$Xr, re$Xf)
+  B <- Matrix(0, ncol(Xfp), ncol(Xfp))
+  diag(B) <- 1
+  tmp_ind <- seq(from = ncol(Xfp) - length(beta_spline) + 1L, to = ncol(Xfp))
+  B[tmp_ind, tmp_ind] <- t(re$trans.D * t(re$trans.U))
+  
+  V <- Matrix::Diagonal(
+    n = length(mdat$value), x = final_model$phi / final_model$V) + 
+    crossprod(Lambdat[-spline_inds, -spline_inds] %*% Zt[-spline_inds, ]) * 
+    final_model$phi
+  
+  R <- Matrix::chol(V, pivot = TRUE); piv <- attr(R, "pivot")
+  
+  WX <- as(solve(t(R), Xfp), "matrix")
+  Sp <- matrix(0, ncol(Xfp), ncol(Xfp))
+  diag(Sp)[c(rep(FALSE, min(tmp_ind) - 1L), (re$pen.ind == 1))] <- 1 / opt$par[theta_inds[[3]]]
+  
+  qrx <- qr(rbind(WX, Sp), LAPACK = TRUE)
+  Ri <- backsolve(qr.R(qrx), diag(ncol(WX)))
+  
+  ind <- qrx$pivot;ind[ind] <- 1:length(ind)## qrx$pivot
+  Ri <- Ri[ind,] ## unpivoted square root of cov matrix in fitting parameterization Ri Ri' = cov
+  
+  Vb <- B%*%Ri; Vb <- Vb%*%t(Vb)
+  
+  ret$spline_coefs <- list(
+    beta_spline = beta_spline, Vb = Vb
+  )
+  
+  saveRDS(ret, paste0("results/ses_model/case_", case, ".rds"))
+}
+
+# Fit case f model with factor loading for income set to zero, to compute likelihood
+# ratio test
+sm <- smoothCon(s(age_z, by = itemgrouphippocampus, k = 15, bs = "cr"), data = dat)[[1]]
+re <- smooth2random(sm, "", 2)
+
+mdat <- as.list(dat)
+mdat$Xf <- re$Xf
+mdat$Xr <- re$rand$Xr
+mdat$pseudoGroups <- rep(1:ncol(re$rand$Xr), length = nrow(dat))
+mdat$itemgroupses <- as.integer(mdat$itemgroup %in% c("edu", "income"))
+
+form <- paste(base_formula, "(1 | id)", sep = " + ")
+
+lmod <- lFormula(as.formula(form), data = mdat)
+lmod$reTrms$Ztlist$`1 | pseudoGroups` <- as(t(as.matrix(mdat$Xr))[], class(lmod$reTrms$Zt))
+lmod$reTrms$Zt <- do.call(rbind, lmod$reTrms$Ztlist)
+delta <- diff(lmod$reTrms$Zt@p)
+
+itemvec <- mdat$item
+
+factor_mapping <- as.integer(factor(
+      str_remove(itemvec, "_father|_mother|_self"),
+      levels = c("edu", "income", "hippocampus")
+    )) - 2L
+
+lambda_mapping_Zt <- unlist(map(seq_along(delta), ~ c(factor_mapping[[.x]], rep(-1L, delta[[.x]] - 1))))
+lambda_mapping_Zt_covs <- integer()
+
+theta_inds <- seq(from = 1, to = length(lmod$reTrms$theta))
+beta_inds <- seq(from = max(theta_inds) + 1L, length.out = ncol(lmod$X))
+lambda_inds <- seq(from = max(beta_inds) + 1L, length.out = 1L)
+weights_mapping <- if_else(mdat$itemgroup == "hippocampus", 1L, if_else(mdat$itemgroup == "edu", 0L, -1L))
+weights_inds <- seq(from = max(lambda_inds) + 1L, length.out = length(unique(weights_mapping[weights_mapping != -1L])))
+
+lbound <- c(lmod$reTrms$lower, rep(-Inf, length(beta_inds)), 
+            rep(-Inf, length(lambda_inds)), rep(0.1, length(weights_inds)))
+
+# Run model, fixing income loading to 0
+mlwrapper <- function(par, gradient, hessian){
+  marginal_likelihood(
+    y = mdat$value_z,
+    X = lmod$X,
+    Zt = lmod$reTrms$Zt,
+    Lambdat = lmod$reTrms$Lambdat,
+    beta = par[beta_inds],
+    theta = par[theta_inds],
+    theta_mapping = lmod$reTrms$Lind - 1L,
+    lambda = c(0, par[lambda_inds]),
+    lambda_mapping_Zt = lambda_mapping_Zt,
+    lambda_mapping_Zt_covs = lambda_mapping_Zt_covs,
+    weights = par[weights_inds],
+    weights_mapping = weights_mapping,
+    gradient = gradient,
+    hessian = hessian
+  )
+}
+
+# Initialize with case f fit, except loading for income
+par_init <- readRDS(file.path("results/ses_model", "case_f.rds"))$opt$par[-17]
+
+mlmem <- memoise(mlwrapper)
+fn <- function(par, gradient = FALSE, hessian = FALSE){
+  mlmem(par, gradient, hessian)$logLik
+}
+gr <- function(par, gradient = TRUE, hessian = FALSE){
+  mlmem(par, gradient, hessian)$gradient[-17] # Remove the 17th element of the gradient
+}
+
+stopifnot(length(gr(par_init)) == length(par_init))
+
+opt <- optim(
+  par = par_init, fn = fn, gr = gr, method = "L-BFGS-B", lower = lbound, 
+  control = list(fnscale = -1, maxit = 5000, trace = 3, REPORT = 10))
+
+saveRDS(opt, file = "results/ses_model/case_f_no_income_loading.rds")
 ```
+
+
+## Democratization of models
+
+- Practitioners will not write their own Newton method or MCMC, nor think that Stan is easy-peasy.
+- Neither will I in an applied project.
+- Need high-level interfaces.
+
+
+---
+
+![](figures/MBR.jpg){fig-align="center"}
+
+---
+
+```{=html}
+<iframe width="100%" height="100%" src="https://lcbc-uio.github.io/galamm/" title="Webpage example"></iframe>
+```
+
+## GLMMs with factor structures
+
+Syntax inspired by `PLmixed` [@rockwoodEstimatingComplexMeasurement2019].
+
+- Simulated data with students nested in schools, and a latent trait measured by five items.
+
+```{r, echo=TRUE, eval=TRUE}
+library(PLmixed)
+head(IRTsim)
+```
+
+## GLMMs with factor structures
+
+```{r, echo=TRUE, eval=TRUE}
+(loading_matrix <- matrix(c(1, NA, NA, NA, NA), ncol = 1))
+```
+
+```{r, echo=TRUE, eval=FALSE}
+mod <- galamm(
+  formula = y ~ item + (0 + ability | school / sid),
+  data = IRTsim,
+  family = binomial,
+  load.var = "item",
+  factor = "ability",
+  lambda = loading_matrix
+)
+```
+
+
+## Mixed response models
+
+Define mapping between rows of dataframe and family:
+
+```{r, echo=TRUE, eval=FALSE}
+families <- c(gaussian, binomial)
+family_mapping <- ifelse(mresp$itemgroup == "a", 1, 2)
+```
+
+Plug in the family mappings:
+
+```{r, echo=TRUE, eval=FALSE}
+mixed_resp <- galamm(
+  formula = y ~ x + (0 + level | id),
+  data = mresp,
+  family = families,
+  family_mapping = family_mapping,
+  load.var = "itemgroup",
+  lambda = loading_matrix,
+  factor = "level"
+)
+```
+
+
+## Heteroscedastic LMMs
+
+Model with item-specific residuals:
+
+```{r, echo=TRUE, eval=FALSE}
+mod <- galamm(
+  formula = y ~ x + (1 | id),
+  weights = ~ (1 | item),
+  data = hsced
+)
+```
+
+- Syntax follows `nlme`, but `nlme` is not designed for crossed random effects, nor factor structures.
+
+## Semiparametric modeling
+
+:::: {.columns}
+
+::: {.column width="50%"}
+Lifespan trajectories of abilities in three cognitive domains:
+
+- Episodic memory measured by CVLT.
+- Working memory measured by digit span.
+- Executive function measured by Stroop.
+:::
+
+::: {.column width="50%"}
+![](figures/PMET_Fig1.png)
+:::
+
+::::
+
+
+
+## Semiparametric modeling
+
+Lifespan trajectories of three cognitive domains:
+
+```{r, echo=TRUE, eval=FALSE}
+mod <- galamm(
+  formula = y ~ item + retest : domain +
+    sl(age, by = domain, factor = c("ability1", "ability2", "ability3")) +
+    (0 + domain1:ability1 + domain2:ability2 + domain3:ability3 
+     | id / timepoint),
+  data = dat,
+  family = c(gaussian, binomial),
+  family_mapping = ifelse(dat$domain == 1L, 1L, 2L),
+  load.var = "item",
+  lambda = lmat,
+  factor = c("ability1", "ability2", "ability3"),
+  control = galamm_control(
+    optim_control = list(factr = 1e9, trace = 3, REPORT = 30, maxit = 1000)
+  )
+)
+```
+
+## Semiparametric modeling
+
+![](figures/PMET_Fig2.jpg){fig-align="center"}
+
+## SES and brain development
+
+:::: {.columns}
+
+::: {.column width="50%"}
+- SES of children measured by:
+  - Mother's income
+  - Father's income
+  - Mother's education level
+  - Father's education level
+
+- SES of adults measured by
+  - Income
+  - Education level
+:::
+
+::: {.column width="50%"}
+![](figures/ses_hippocampus.jpg)
+:::
+
+::::
+
+## Latent covariate model
+
+:::{.nonincremental}
+- Six SES measurements plus hippocampal volume are responses.
+- Want to model how latent SES interactors with hippocampal trajectory.
+:::
+
+## Latent covariate model
+
+\begin{align}
+y_{i} &= \underbrace{\mathbf{d}_{s,i}^{T}\boldsymbol{\beta}_{S}}_{\text{item intercepts}} + \underbrace{d_{h,i}\mathbf{x}_{h,i}^{T} \boldsymbol{\beta}_{h}}_{\text{brain covs.}} + \underbrace{d_{h,i} f\left(a_{i}\right)}_{\text{brain trajectory}}+  \\
+&\underbrace{\eta_{1} \mathbf{z}_{i}^{T}\boldsymbol{\lambda}}_{\text{SES-brain interaction}} + \underbrace{d_{h,i} \eta_{2}}_{\text{subject brain intercept}} + \underbrace{\epsilon_{i}}_{\text{residual}}
+\end{align}
+
+- When $d_{h,i}=1$, $\mathbf{z}_{i}^{T} = (0,0,0,0,0,0,1,a_{i})^{T}$, so $\lambda_{8}$ is the interaction between $\eta_{1}$ and $a_{i}$.
+
+
+## Latent covariate model
+
+```{r, echo=TRUE, eval=FALSE}
+factor_interactions <- list(~ 1, ~ 1, ~ 1, ~ 1, ~ 1, ~ 1, ~ 1 + x)
+```
+
+Another way of saying
+
+$$
+\mathbf{y} =
+\begin{pmatrix}
+1 \\
+\lambda_{2} \\
+\lambda_{3} \\
+\lambda_{4} \\
+\lambda_{5} \\ 
+\lambda_{6} \\
+\lambda_{7} + \lambda_{8} a_{i} \\
+\end{pmatrix}
+\eta
+$$
+
+## Latent covariate model
+
+```{r, eval=FALSE, echo=TRUE}
+mod <- galamm(
+  formula = y ~ 0 + covs + s(x, by = response_is_brain) + 
+    (0 + loading | id) + (0 + response_is_brain | id),
+  data = dat,
+  weights = ~(1 | item),
+  load.var = "item",
+  lambda = lambda,
+  factor = "loading",
+  factor_interactions = factor_interactions
+)
+```
+
+
+## Latent covariate model
+
+
+:::: {.columns}
+
+::: {.column width="50%"}
+:::{.nonincremental}
+- Small offset effect, $\lambda_{7}$ significant.
+- No evidence for interaction, $\lambda_{8}$ not significant.
+:::
+:::
+
+::: {.column width="50%"}
+![](figures/PMET_SES_2.jpg)
+:::
+
+::::
+
+
+
+## References
