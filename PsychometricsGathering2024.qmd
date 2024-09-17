@@ -37,8 +37,8 @@ css: styles.css
 ::: {.column width="50%"}
 ![](figures/cognitive_test.jpg){width="50%" fig-align="center"}
 
-- Factor structures
-- SEM, IRT
+- Small data, carefully designed
+- Latent variables
 - Parametric models
 - Multiple response types
 - Multivariate
@@ -116,7 +116,7 @@ $$
 ## Key ideas in GALAMM
 
 
-- Regularization parameters for smooth terms are top-level random effects.
+- Regularization parameters for smooth terms are top-level random effect variances.
 
 - Sparse matrix methods easily enable crossed random effects.
 
@@ -446,11 +446,15 @@ saveRDS(opt, file = "results/ses_model/case_f_no_income_loading.rds")
 <iframe width="100%" height="100%" src="https://lcbc-uio.github.io/galamm/" title="Webpage example"></iframe>
 ```
 
+# Demonstration
+
 ## GLMMs with factor structures
 
 Syntax inspired by `PLmixed` [@rockwoodEstimatingComplexMeasurement2019].
 
+:::{.nonincremental}
 - Simulated data with students nested in schools, and a latent trait measured by five items.
+:::
 
 ```{r, echo=TRUE, eval=TRUE}
 library(PLmixed)
@@ -511,7 +515,7 @@ mod <- galamm(
 )
 ```
 
-- Syntax follows `nlme`, but `nlme` is not designed for crossed random effects, nor factor structures.
+- Not available in `lme4`.
 
 ## Semiparametric modeling
 
@@ -625,12 +629,12 @@ $$
 ```{r, eval=FALSE, echo=TRUE}
 mod <- galamm(
   formula = y ~ 0 + covs + s(x, by = response_is_brain) + 
-    (0 + loading | id) + (0 + response_is_brain | id),
+    (0 + ses | id) + (0 + response_is_brain | id),
   data = dat,
   weights = ~(1 | item),
   load.var = "item",
   lambda = lambda,
-  factor = "loading",
+  factor = "ses",
   factor_interactions = factor_interactions
 )
 ```
@@ -638,6 +642,11 @@ mod <- galamm(
 
 ## Latent covariate model
 
+When $y_{i}$ is a brain measurement:
+
+$$
+y_{i} = f(a_{i}) + \lambda_{7} \eta_{i} + \lambda_{8} a_{i} \eta_{i} + \epsilon_{i}
+$$
 
 :::: {.columns}
 
@@ -654,12 +663,16 @@ mod <- galamm(
 
 ::::
 
-## Conclusion and outlook
+## Summary
 
 - `galamm` tries to find a niche for complex models where current tools are impractical.
 - I plan to add link functions for rank and preference data.
 
-- Deterministic algorithms do not scale indefinitely - for intense longitudinal data (dynamic SEM, dynamic factor models, CT-SEM), Hamiltonian Monte Carlo with Stan seems much better.
+## Limits to deterministic algorithms?
 
+Intense longitudinal data, dynamic SEM [@asparouhovDynamicStructuralEquation2018;@mcneishPrimerTwolevelDynamic2020]:
+
+- Hamiltonian Monte Carlo (`Stan`) seems to be the most practical computational option. 
+- Work in progress on implementing splines to captures trends, cycles, and learning effects in DSEMs for EdTech (forthcoming: Sørensen and McCormick; McCormick and Sørensen).
 
 ## References

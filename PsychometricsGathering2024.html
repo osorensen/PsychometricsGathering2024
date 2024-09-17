@@ -459,8 +459,8 @@
 </figure>
 </div>
 <ul>
-<li class="fragment">Factor structures</li>
-<li class="fragment">SEM, IRT</li>
+<li class="fragment">Small data, carefully designed</li>
+<li class="fragment">Latent variables</li>
 <li class="fragment">Parametric models</li>
 <li class="fragment">Multiple response types</li>
 <li class="fragment">Multivariate</li>
@@ -539,7 +539,7 @@ f\left(y | \theta, \phi \right) = \exp\left\{\frac{y \theta - b\left(\theta(\mu)
 <section id="key-ideas-in-galamm" class="slide level2">
 <h2>Key ideas in GALAMM</h2>
 <ul>
-<li class="fragment"><p>Regularization parameters for smooth terms are top-level random effects.</p></li>
+<li class="fragment"><p>Regularization parameters for smooth terms are top-level random effect variances.</p></li>
 <li class="fragment"><p>Sparse matrix methods easily enable crossed random effects.</p></li>
 <li class="fragment"><p>Maximum marginal likelihood estimation using Laplace approximation.</p></li>
 <li class="fragment"><p>Gradients and Hessians popping out using autodiff.</p></li>
@@ -865,13 +865,20 @@ f\left(y | \theta, \phi \right) = \exp\left\{\frac{y \theta - b\left(\theta(\mu)
 <section class="slide level2">
 
 <iframe width="100%" height="100%" src="https://lcbc-uio.github.io/galamm/" title="Webpage example"></iframe>
+</section></section>
+<section>
+<section id="demonstration" class="title-slide slide level1 center">
+<h1>Demonstration</h1>
+
 </section>
 <section id="glmms-with-factor-structures" class="slide level2">
 <h2>GLMMs with factor structures</h2>
 <p>Syntax inspired by <code>PLmixed</code> <span class="citation" data-cites="rockwoodEstimatingComplexMeasurement2019">(<a href="#/references" role="doc-biblioref" onclick="">Rockwood and Jeon 2019</a>)</span>.</p>
+<div>
 <ul>
-<li class="fragment">Simulated data with students nested in schools, and a latent trait measured by five items.</li>
+<li>Simulated data with students nested in schools, and a latent trait measured by five items.</li>
 </ul>
+</div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href=""></a><span class="fu">library</span>(PLmixed)</span>
 <span id="cb2-2"><a href=""></a><span class="fu">head</span>(IRTsim)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -941,7 +948,7 @@ f\left(y | \theta, \phi \right) = \exp\left\{\frac{y \theta - b\left(\theta(\mu)
 <span id="cb9-5"><a href=""></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <ul>
-<li class="fragment">Syntax follows <code>nlme</code>, but <code>nlme</code> is not designed for crossed random effects, nor factor structures.</li>
+<li class="fragment">Not available in <code>lme4</code>.</li>
 </ul>
 </section>
 <section id="semiparametric-modeling" class="slide level2">
@@ -1051,18 +1058,22 @@ y_{i} &amp;= \underbrace{\mathbf{d}_{s,i}^{T}\boldsymbol{\beta}_{S}}_{\text{item
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href=""></a>mod <span class="ot">&lt;-</span> <span class="fu">galamm</span>(</span>
 <span id="cb12-2"><a href=""></a>  <span class="at">formula =</span> y <span class="sc">~</span> <span class="dv">0</span> <span class="sc">+</span> covs <span class="sc">+</span> <span class="fu">s</span>(x, <span class="at">by =</span> response_is_brain) <span class="sc">+</span> </span>
-<span id="cb12-3"><a href=""></a>    (<span class="dv">0</span> <span class="sc">+</span> loading <span class="sc">|</span> id) <span class="sc">+</span> (<span class="dv">0</span> <span class="sc">+</span> response_is_brain <span class="sc">|</span> id),</span>
+<span id="cb12-3"><a href=""></a>    (<span class="dv">0</span> <span class="sc">+</span> ses <span class="sc">|</span> id) <span class="sc">+</span> (<span class="dv">0</span> <span class="sc">+</span> response_is_brain <span class="sc">|</span> id),</span>
 <span id="cb12-4"><a href=""></a>  <span class="at">data =</span> dat,</span>
 <span id="cb12-5"><a href=""></a>  <span class="at">weights =</span> <span class="sc">~</span>(<span class="dv">1</span> <span class="sc">|</span> item),</span>
 <span id="cb12-6"><a href=""></a>  <span class="at">load.var =</span> <span class="st">"item"</span>,</span>
 <span id="cb12-7"><a href=""></a>  <span class="at">lambda =</span> lambda,</span>
-<span id="cb12-8"><a href=""></a>  <span class="at">factor =</span> <span class="st">"loading"</span>,</span>
+<span id="cb12-8"><a href=""></a>  <span class="at">factor =</span> <span class="st">"ses"</span>,</span>
 <span id="cb12-9"><a href=""></a>  <span class="at">factor_interactions =</span> factor_interactions</span>
 <span id="cb12-10"><a href=""></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="latent-covariate-model-4" class="slide level2">
 <h2>Latent covariate model</h2>
+<p>When <span class="math inline">\(y_{i}\)</span> is a brain measurement:</p>
+<p><span class="math display">\[
+y_{i} = f(a_{i}) + \lambda_{7} \eta_{i} + \lambda_{8} a_{i} \eta_{i} + \epsilon_{i}
+\]</span></p>
 <div class="columns">
 <div class="column" style="width:50%;">
 <div>
@@ -1076,12 +1087,19 @@ y_{i} &amp;= \underbrace{\mathbf{d}_{s,i}^{T}\boldsymbol{\beta}_{S}}_{\text{item
 </div>
 </div>
 </section>
-<section id="conclusion-and-outlook" class="slide level2">
-<h2>Conclusion and outlook</h2>
+<section id="summary" class="slide level2">
+<h2>Summary</h2>
 <ul>
-<li class="fragment"><p><code>galamm</code> tries to find a niche for complex models where current tools are impractical.</p></li>
-<li class="fragment"><p>I plan to add link functions for rank and preference data.</p></li>
-<li class="fragment"><p>Deterministic algorithms do not scale indefinitely - for intense longitudinal data (dynamic SEM, dynamic factor models, CT-SEM), Hamiltonian Monte Carlo with Stan seems much better.</p></li>
+<li class="fragment"><code>galamm</code> tries to find a niche for complex models where current tools are impractical.</li>
+<li class="fragment">I plan to add link functions for rank and preference data.</li>
+</ul>
+</section>
+<section id="limits-to-deterministic-algorithms" class="slide level2">
+<h2>Limits to deterministic algorithms?</h2>
+<p>Intense longitudinal data, dynamic SEM <span class="citation" data-cites="asparouhovDynamicStructuralEquation2018 mcneishPrimerTwolevelDynamic2020">(<a href="#/references" role="doc-biblioref" onclick="">Asparouhov, Hamaker, and Muthén 2018</a>; <a href="#/references" role="doc-biblioref" onclick="">McNeish and Hamaker 2020</a>)</span>:</p>
+<ul>
+<li class="fragment">Hamiltonian Monte Carlo (<code>Stan</code>) seems to be the most practical computational option.</li>
+<li class="fragment">Work in progress on implementing splines to captures trends, cycles, and learning effects in DSEMs for EdTech (forthcoming: Sørensen and McCormick; McCormick and Sørensen).</li>
 </ul>
 </section>
 <section id="references" class="slide level2 smaller scrollable">
@@ -1092,6 +1110,12 @@ y_{i} &amp;= \underbrace{\mathbf{d}_{s,i}^{T}\boldsymbol{\beta}_{S}}_{\text{item
 </div>
 </div>
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-asparouhovDynamicStructuralEquation2018" class="csl-entry" role="listitem">
+Asparouhov, Tihomir, Ellen L. Hamaker, and Bengt Muthén. 2018. <span>“Dynamic <span>Structural Equation Models</span>.”</span> <em>Structural Equation Modeling: A Multidisciplinary Journal</em> 25 (3): 359–88. <a href="https://doi.org/10.1080/10705511.2017.1406803">https://doi.org/10.1080/10705511.2017.1406803</a>.
+</div>
+<div id="ref-mcneishPrimerTwolevelDynamic2020" class="csl-entry" role="listitem">
+McNeish, Daniel, and Ellen L. Hamaker. 2020. <span>“A Primer on Two-Level Dynamic Structural Equation Models for Intensive Longitudinal Data in <span>Mplus</span>.”</span> <em>Psychological Methods</em> 25 (5): 610–35. <a href="https://doi.org/10.1037/met0000250">https://doi.org/10.1037/met0000250</a>.
+</div>
 <div id="ref-rabe-heskethGeneralizedMultilevelStructural2004" class="csl-entry" role="listitem">
 Rabe-Hesketh, Sophia, Anders Skrondal, and Andrew Pickles. 2004. <span>“Generalized Multilevel Structural Equation Modeling.”</span> <em>Psychometrika</em> 69 (2): 167–90. <a href="https://doi.org/10.1007/BF02295939">https://doi.org/10.1007/BF02295939</a>.
 </div>
