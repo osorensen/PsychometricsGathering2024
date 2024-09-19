@@ -692,7 +692,6 @@ Neural noise associated with variability in reaction times? [@mccormickPoorerWhi
 
 ::: {.column width="60%"}
 ![](figures/star_drawing.jpg){fig-align="center"}
-![](figures/star_3.jpg){fig-align="center"}
 :::
 
 ::: {.column width="40%"}
@@ -722,14 +721,14 @@ Level-2 model:
 \log \psi_{i}^{2} &= \gamma_{\psi} + u_{\psi i} \\
 \end{align*}
 
-[@asparouhovDynamicStructuralEquation2018;@mcneishPrimerTwolevelDynamic2020]
+@asparouhovDynamicStructuralEquation2018
 
 ## Intense longitudinal data
 
-- Hamiltonian Monte Carlo (`Stan`) seems to be the most practical computational option (or Gibbs sampling in MPlus)
 - Asymmetric coupling dynamics [@schaafAdvocatingNewDefault2024].
 - Learning effects, trends, cycles, with splines.
   - Level-1 model (Sørensen and McCormick, forthcoming)
   - Level-2/3 model (McCormick and Sørensen, forthcoming)
+- Hamiltonian Monte Carlo (`Stan`) or Gibbs sampling (`MPlus`) only feasible option?
 
 ## References

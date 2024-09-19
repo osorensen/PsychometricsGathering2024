@@ -1113,7 +1113,11 @@ y_{i} = f(a_{i}) + \lambda_{7} \eta_{i} + \lambda_{8} a_{i} \eta_{i} + \epsilon_
 <h2>Mirror drawing tasks</h2>
 <div class="columns">
 <div class="column" style="width:60%;">
-<p><img data-src="figures/star_drawing.jpg" class="quarto-figure quarto-figure-center"> <img data-src="figures/star_3.jpg" class="quarto-figure quarto-figure-center"></p>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="figures/star_drawing.jpg" class="quarto-figure quarto-figure-center"></p>
+</figure>
+</div>
 </div><div class="column" style="width:40%;">
 <div class="quarto-figure quarto-figure-center">
 <figure>
@@ -1135,18 +1139,18 @@ y_{it} = \alpha_{i} + \beta_{i} x_{it} + \phi_{i} \left(y_{i(t-1)} - \alpha_{i} 
 \phi_{i} &amp;= \gamma_{\phi} + u_{\phi i} \\
 \log \psi_{i}^{2} &amp;= \gamma_{\psi} + u_{\psi i} \\
 \end{align*}\]</span></p>
-<p><span class="citation" data-cites="asparouhovDynamicStructuralEquation2018 mcneishPrimerTwolevelDynamic2020">(<a href="#/references" role="doc-biblioref" onclick="">Asparouhov, Hamaker, and Muthén 2018</a>; <a href="#/references" role="doc-biblioref" onclick="">McNeish and Hamaker 2020</a>)</span></p>
+<p><span class="citation" data-cites="asparouhovDynamicStructuralEquation2018">Asparouhov, Hamaker, and Muthén (<a href="#/references" role="doc-biblioref" onclick="">2018</a>)</span></p>
 </section>
 <section id="intense-longitudinal-data" class="slide level2">
 <h2>Intense longitudinal data</h2>
 <ul>
-<li class="fragment">Hamiltonian Monte Carlo (<code>Stan</code>) seems to be the most practical computational option (or Gibbs sampling in MPlus)</li>
 <li class="fragment">Asymmetric coupling dynamics <span class="citation" data-cites="schaafAdvocatingNewDefault2024">(<a href="#/references" role="doc-biblioref" onclick="">Schaaf et al. 2024</a>)</span>.</li>
 <li class="fragment">Learning effects, trends, cycles, with splines.
 <ul>
 <li class="fragment">Level-1 model (Sørensen and McCormick, forthcoming)</li>
 <li class="fragment">Level-2/3 model (McCormick and Sørensen, forthcoming)</li>
 </ul></li>
+<li class="fragment">Hamiltonian Monte Carlo (<code>Stan</code>) or Gibbs sampling (<code>MPlus</code>) only feasible option?</li>
 </ul>
 </section>
 <section id="references" class="slide level2 smaller scrollable">
@@ -1165,9 +1169,6 @@ Judd, Nicholas, Michael Aristodemou, Torkel Klingberg, and Rogier Kievit. 2024. 
 </div>
 <div id="ref-mccormickPoorerWhiteMatter2023" class="csl-entry" role="listitem">
 McCormick, Ethan M., and Rogier A. Kievit. 2023. <span>“Poorer <span>White Matter Microstructure Predicts Slower</span> and <span>More Variable Reaction Time Performance</span>: <span>Evidence</span> for a <span>Neural Noise Hypothesis</span> in a <span>Large Lifespan Cohort</span>.”</span> <em>Journal of Neuroscience</em> 43 (19): 3557–66. <a href="https://doi.org/10.1523/JNEUROSCI.1042-22.2023">https://doi.org/10.1523/JNEUROSCI.1042-22.2023</a>.
-</div>
-<div id="ref-mcneishPrimerTwolevelDynamic2020" class="csl-entry" role="listitem">
-McNeish, Daniel, and Ellen L. Hamaker. 2020. <span>“A Primer on Two-Level Dynamic Structural Equation Models for Intensive Longitudinal Data in <span>Mplus</span>.”</span> <em>Psychological Methods</em> 25 (5): 610–35. <a href="https://doi.org/10.1037/met0000250">https://doi.org/10.1037/met0000250</a>.
 </div>
 <div id="ref-rabe-heskethGeneralizedMultilevelStructural2004" class="csl-entry" role="listitem">
 Rabe-Hesketh, Sophia, Anders Skrondal, and Andrew Pickles. 2004. <span>“Generalized Multilevel Structural Equation Modeling.”</span> <em>Psychometrika</em> 69 (2): 167–90. <a href="https://doi.org/10.1007/BF02295939">https://doi.org/10.1007/BF02295939</a>.
