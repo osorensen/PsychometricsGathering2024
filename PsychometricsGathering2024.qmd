@@ -726,7 +726,8 @@ Level-2 model:
 
 ## Intense longitudinal data
 
-- Hamiltonian Monte Carlo (`Stan`) seems to be the most practical computational option. 
+- Hamiltonian Monte Carlo (`Stan`) seems to be the most practical computational option (or Gibbs sampling in MPlus)
+- Asymmetric coupling dynamics [@schaafAdvocatingNewDefault2024].
 - Learning effects, trends, cycles, with splines.
   - Level-1 model (Sørensen and McCormick, forthcoming)
   - Level-2/3 model (McCormick and Sørensen, forthcoming)
