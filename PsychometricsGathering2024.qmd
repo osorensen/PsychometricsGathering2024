@@ -686,7 +686,7 @@ Intensive longitudinal data
 
 Neural noise associated with variability in reaction times? [@mccormickPoorerWhiteMatter2023]
 
-## Star-drawing
+## Mirror drawing tasks
 
 :::: {.columns}
 
