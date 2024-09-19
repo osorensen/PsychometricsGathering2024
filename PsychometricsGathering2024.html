@@ -487,7 +487,9 @@
 <div class="columns">
 <div class="column" style="width:50%;">
 <ul>
-<li class="fragment">Brain trajectories <span class="math inline">\(s(age)\)</span> well captured with splines.</li>
+<li class="fragment">Lifespan trajectories well captured with splines <span class="math display">\[
+s(age) = \sum_{k=1}^{K} b_{k}(age)\beta_{k}.
+\]</span></li>
 <li class="fragment">How does SES interact with <span class="math inline">\(s(age)\)</span>?</li>
 </ul>
 </div><div class="column" style="width:50%;">
@@ -518,6 +520,10 @@
 <h1>Generalized additive latent and mixed models</h1>
 <p>An extension of generalized linear latent and mixed models (GLLAMM) <span class="citation" data-cites="rabe-heskethGeneralizedMultilevelStructural2004 skrondalGeneralizedLatentVariable2004">(<a href="#/references" role="doc-biblioref" onclick="">Rabe-Hesketh, Skrondal, and Pickles 2004</a>; <a href="#/references" role="doc-biblioref" onclick="">Skrondal and Rabe-Hesketh 2004</a>)</span></p>
 </section>
+<section class="slide level2">
+
+
+<img data-src="figures/PMET_frontpage.jpg" class="quarto-figure quarto-figure-center r-stretch"></section>
 <section id="galamm-title" class="slide level2">
 <h2>GALAMM</h2>
 <ul>
@@ -530,16 +536,13 @@ f\left(y | \theta, \phi \right) = \exp\left\{\frac{y \theta - b\left(\theta(\mu)
 <li class="fragment"><p>Structural model <span class="math display">\[
 \boldsymbol{\eta} = \mathbf{B}\boldsymbol{\eta} + \mathbf{h}\left(\mathbf{w}\right) + \boldsymbol{\zeta}
 \]</span></p></li>
+<li class="fragment"><p>Second-derivative penalization of smooth terms, with penalization parameters to be estimated.</p></li>
 </ul>
 </section>
-<section class="slide level2">
-
-
-<img data-src="figures/PMET_frontpage.jpg" class="quarto-figure quarto-figure-center r-stretch"></section>
 <section id="key-ideas-in-galamm" class="slide level2">
 <h2>Key ideas in GALAMM</h2>
 <ul>
-<li class="fragment"><p>Regularization parameters for smooth terms are top-level random effect variances.</p></li>
+<li class="fragment"><p>Penalization parameters for smooth terms are (inverse) top-level random effect variances.</p></li>
 <li class="fragment"><p>Sparse matrix methods easily enable crossed random effects.</p></li>
 <li class="fragment"><p>Maximum marginal likelihood estimation using Laplace approximation.</p></li>
 <li class="fragment"><p>Gradients and Hessians popping out using autodiff.</p></li>
@@ -980,11 +983,8 @@ f\left(y | \theta, \phi \right) = \exp\left\{\frac{y \theta - b\left(\theta(\mu)
 <span id="cb10-8"><a href=""></a>  <span class="at">family_mapping =</span> <span class="fu">ifelse</span>(dat<span class="sc">$</span>domain <span class="sc">==</span> <span class="dv">1</span>L, <span class="dv">1</span>L, <span class="dv">2</span>L),</span>
 <span id="cb10-9"><a href=""></a>  <span class="at">load.var =</span> <span class="st">"item"</span>,</span>
 <span id="cb10-10"><a href=""></a>  <span class="at">lambda =</span> lmat,</span>
-<span id="cb10-11"><a href=""></a>  <span class="at">factor =</span> <span class="fu">c</span>(<span class="st">"ability1"</span>, <span class="st">"ability2"</span>, <span class="st">"ability3"</span>),</span>
-<span id="cb10-12"><a href=""></a>  <span class="at">control =</span> <span class="fu">galamm_control</span>(</span>
-<span id="cb10-13"><a href=""></a>    <span class="at">optim_control =</span> <span class="fu">list</span>(<span class="at">factr =</span> <span class="fl">1e9</span>, <span class="at">trace =</span> <span class="dv">3</span>, <span class="at">REPORT =</span> <span class="dv">30</span>, <span class="at">maxit =</span> <span class="dv">1000</span>)</span>
-<span id="cb10-14"><a href=""></a>  )</span>
-<span id="cb10-15"><a href=""></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb10-11"><a href=""></a>  <span class="at">factor =</span> <span class="fu">c</span>(<span class="st">"ability1"</span>, <span class="st">"ability2"</span>, <span class="st">"ability3"</span>)</span>
+<span id="cb10-12"><a href=""></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="semiparametric-modeling-2" class="slide level2">
@@ -1093,13 +1093,59 @@ y_{i} = f(a_{i}) + \lambda_{7} \eta_{i} + \lambda_{8} a_{i} \eta_{i} + \epsilon_
 <li class="fragment"><code>galamm</code> tries to find a niche for complex models where current tools are impractical.</li>
 <li class="fragment">I plan to add link functions for rank and preference data.</li>
 </ul>
+</section></section>
+<section>
+<section id="limits-to-analytical-approximations" class="title-slide slide level1 center">
+<h1>Limits to analytical approximations?</h1>
+<p>Intensive longitudinal data</p>
 </section>
-<section id="limits-to-deterministic-algorithms" class="slide level2">
-<h2>Limits to deterministic algorithms?</h2>
-<p>Intense longitudinal data, dynamic SEM <span class="citation" data-cites="asparouhovDynamicStructuralEquation2018 mcneishPrimerTwolevelDynamic2020">(<a href="#/references" role="doc-biblioref" onclick="">Asparouhov, Hamaker, and Muthén 2018</a>; <a href="#/references" role="doc-biblioref" onclick="">McNeish and Hamaker 2020</a>)</span>:</p>
+<section id="edtech" class="slide level2">
+<h2>EdTech</h2>
+
+<img data-src="figures/Judd.jpg" class="quarto-figure quarto-figure-center r-stretch"><p><span class="citation" data-cites="juddInterindividualDifferencesCognitive2024">Judd et al. (<a href="#/references" role="doc-biblioref" onclick="">2024</a>)</span></p>
+</section>
+<section id="reaction-time-experiments" class="slide level2">
+<h2>Reaction time experiments</h2>
+
+<img data-src="figures/kievit_2016.jpg" class="quarto-figure quarto-figure-center r-stretch"><p>Neural noise associated with variability in reaction times? <span class="citation" data-cites="mccormickPoorerWhiteMatter2023">(<a href="#/references" role="doc-biblioref" onclick="">McCormick, Neuroscience, and Kievit 2023</a>)</span></p>
+</section>
+<section id="star-drawing" class="slide level2">
+<h2>Star-drawing</h2>
+<div class="columns">
+<div class="column" style="width:60%;">
+<p><img data-src="figures/star_drawing.jpg" class="quarto-figure quarto-figure-center"> <img data-src="figures/star_3.jpg" class="quarto-figure quarto-figure-center"></p>
+</div><div class="column" style="width:40%;">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="figures/star_2.jpg" class="quarto-figure quarto-figure-center"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Pablo Garrido et al.&nbsp;(in progress)</p>
+</section>
+<section id="dynamic-sem" class="slide level2">
+<h2>Dynamic SEM</h2>
+<p>A simple AR(1) example. Level-1 model: <span class="math display">\[
+y_{it} = \alpha_{i} + \beta_{i} x_{it} + \phi_{i} \left(y_{i(t-1)} - \alpha_{i} - \beta_{i} x_{t-1}\right) + \delta_{it}
+\]</span></p>
+<p>Level-2 model: <span class="math display">\[\begin{align*}
+\alpha_{i} &amp;= \gamma_{\alpha} + u_{\alpha i} \\        
+\beta_{i} &amp;= \gamma_{\beta} + u_{\beta i} \\
+\phi_{i} &amp;= \gamma_{\phi} + u_{\phi i} \\
+\log \psi_{i}^{2} &amp;= \gamma_{\psi} + u_{\psi i} \\
+\end{align*}\]</span></p>
+<p><span class="citation" data-cites="asparouhovDynamicStructuralEquation2018 mcneishPrimerTwolevelDynamic2020">(<a href="#/references" role="doc-biblioref" onclick="">Asparouhov, Hamaker, and Muthén 2018</a>; <a href="#/references" role="doc-biblioref" onclick="">McNeish and Hamaker 2020</a>)</span></p>
+</section>
+<section id="intense-longitudinal-data" class="slide level2">
+<h2>Intense longitudinal data</h2>
 <ul>
 <li class="fragment">Hamiltonian Monte Carlo (<code>Stan</code>) seems to be the most practical computational option.</li>
-<li class="fragment">Work in progress on implementing splines to captures trends, cycles, and learning effects in DSEMs for EdTech (forthcoming: Sørensen and McCormick; McCormick and Sørensen).</li>
+<li class="fragment">Learning effects, trends, cycles, with splines.
+<ul>
+<li class="fragment">Level-1 model (Sørensen and McCormick, forthcoming)</li>
+<li class="fragment">Level-2/3 model (McCormick and Sørensen, forthcoming)</li>
+</ul></li>
 </ul>
 </section>
 <section id="references" class="slide level2 smaller scrollable">
@@ -1112,6 +1158,12 @@ y_{i} = f(a_{i}) + \lambda_{7} \eta_{i} + \lambda_{8} a_{i} \eta_{i} + \epsilon_
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
 <div id="ref-asparouhovDynamicStructuralEquation2018" class="csl-entry" role="listitem">
 Asparouhov, Tihomir, Ellen L. Hamaker, and Bengt Muthén. 2018. <span>“Dynamic <span>Structural Equation Models</span>.”</span> <em>Structural Equation Modeling: A Multidisciplinary Journal</em> 25 (3): 359–88. <a href="https://doi.org/10.1080/10705511.2017.1406803">https://doi.org/10.1080/10705511.2017.1406803</a>.
+</div>
+<div id="ref-juddInterindividualDifferencesCognitive2024" class="csl-entry" role="listitem">
+Judd, Nicholas, Michael Aristodemou, Torkel Klingberg, and Rogier Kievit. 2024. <span>“Interindividual <span>Differences</span> in <span>Cognitive Variability Are Ubiquitous</span> and <span>Distinct From Mean Performance</span> in a <span>Battery</span> of <span>Eleven Tasks</span>.”</span> <em>Journal of Cognition</em> 7 (1). <a href="https://doi.org/10.5334/joc.371">https://doi.org/10.5334/joc.371</a>.
+</div>
+<div id="ref-mccormickPoorerWhiteMatter2023" class="csl-entry" role="listitem">
+McCormick, Ethan M., Cambridge Centre for Ageing and Neuroscience, and Rogier A. Kievit. 2023. <span>“Poorer <span>White Matter Microstructure Predicts Slower</span> and <span>More Variable Reaction Time Performance</span>: <span>Evidence</span> for a <span>Neural Noise Hypothesis</span> in a <span>Large Lifespan Cohort</span>.”</span> <em>Journal of Neuroscience</em> 43 (19): 3557–66. <a href="https://doi.org/10.1523/JNEUROSCI.1042-22.2023">https://doi.org/10.1523/JNEUROSCI.1042-22.2023</a>.
 </div>
 <div id="ref-mcneishPrimerTwolevelDynamic2020" class="csl-entry" role="listitem">
 McNeish, Daniel, and Ellen L. Hamaker. 2020. <span>“A Primer on Two-Level Dynamic Structural Equation Models for Intensive Longitudinal Data in <span>Mplus</span>.”</span> <em>Psychological Methods</em> 25 (5): 610–35. <a href="https://doi.org/10.1037/met0000250">https://doi.org/10.1037/met0000250</a>.

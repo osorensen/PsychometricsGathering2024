@@ -63,7 +63,10 @@ What is the effect of socioeconomic status (SES) on brain development?
 :::: {.columns}
 
 ::: {.column width="50%"}
-- Brain trajectories $s(age)$ well captured with splines.
+- Lifespan trajectories well captured with splines 
+$$
+s(age) = \sum_{k=1}^{K} b_{k}(age)\beta_{k}.
+$$
 - How does SES interact with $s(age)$?
 :::
 
@@ -92,6 +95,10 @@ For tens to thousands of outcome measures, we need something automatic.
 
 An extension of generalized linear latent and mixed models (GLLAMM) [@rabe-heskethGeneralizedMultilevelStructural2004;@skrondalGeneralizedLatentVariable2004]
 
+---
+
+![](figures/PMET_frontpage.jpg){fig-align="center"}
+
 ## GALAMM {#galamm-title}
 
 - Response distribution
@@ -109,14 +116,12 @@ $$
 \boldsymbol{\eta} = \mathbf{B}\boldsymbol{\eta} + \mathbf{h}\left(\mathbf{w}\right) + \boldsymbol{\zeta}
 $$
 
----
-
-![](figures/PMET_frontpage.jpg){fig-align="center"}
+- Second-derivative penalization of smooth terms, with penalization parameters to be estimated.
 
 ## Key ideas in GALAMM
 
 
-- Regularization parameters for smooth terms are top-level random effect variances.
+- Penalization parameters for smooth terms are (inverse) top-level random effect variances.
 
 - Sparse matrix methods easily enable crossed random effects.
 
@@ -552,10 +557,7 @@ mod <- galamm(
   family_mapping = ifelse(dat$domain == 1L, 1L, 2L),
   load.var = "item",
   lambda = lmat,
-  factor = c("ability1", "ability2", "ability3"),
-  control = galamm_control(
-    optim_control = list(factr = 1e9, trace = 3, REPORT = 30, maxit = 1000)
-  )
+  factor = c("ability1", "ability2", "ability3")
 )
 ```
 
@@ -668,11 +670,65 @@ $$
 - `galamm` tries to find a niche for complex models where current tools are impractical.
 - I plan to add link functions for rank and preference data.
 
-## Limits to deterministic algorithms?
+# Limits to analytical approximations?
 
-Intense longitudinal data, dynamic SEM [@asparouhovDynamicStructuralEquation2018;@mcneishPrimerTwolevelDynamic2020]:
+Intensive longitudinal data
+
+## EdTech
+
+![](figures/Judd.jpg){fig-align="center"}
+
+@juddInterindividualDifferencesCognitive2024
+
+## Reaction time experiments
+
+![](figures/kievit_2016.jpg){fig-align="center"}
+
+Neural noise associated with variability in reaction times? [@mccormickPoorerWhiteMatter2023]
+
+## Star-drawing
+
+:::: {.columns}
+
+::: {.column width="60%"}
+![](figures/star_drawing.jpg){fig-align="center"}
+![](figures/star_3.jpg){fig-align="center"}
+:::
+
+::: {.column width="40%"}
+![](figures/star_2.jpg){fig-align="center"}
+:::
+
+::::
+
+Pablo Garrido et al. (in progress)
+
+
+
+
+
+## Dynamic SEM
+
+A simple AR(1) example. Level-1 model:
+$$
+y_{it} = \alpha_{i} + \beta_{i} x_{it} + \phi_{i} \left(y_{i(t-1)} - \alpha_{i} - \beta_{i} x_{t-1}\right) + \delta_{it}
+$$
+
+Level-2 model:
+\begin{align*}
+\alpha_{i} &= \gamma_{\alpha} + u_{\alpha i} \\        
+\beta_{i} &= \gamma_{\beta} + u_{\beta i} \\
+\phi_{i} &= \gamma_{\phi} + u_{\phi i} \\
+\log \psi_{i}^{2} &= \gamma_{\psi} + u_{\psi i} \\
+\end{align*}
+
+[@asparouhovDynamicStructuralEquation2018;@mcneishPrimerTwolevelDynamic2020]
+
+## Intense longitudinal data
 
 - Hamiltonian Monte Carlo (`Stan`) seems to be the most practical computational option. 
-- Work in progress on implementing splines to captures trends, cycles, and learning effects in DSEMs for EdTech (forthcoming: Sørensen and McCormick; McCormick and Sørensen).
+- Learning effects, trends, cycles, with splines.
+  - Level-1 model (Sørensen and McCormick, forthcoming)
+  - Level-2/3 model (McCormick and Sørensen, forthcoming)
 
 ## References
